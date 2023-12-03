@@ -1,37 +1,149 @@
+//go:build ignore
+// +build ignore
+
 package main
-//+build 
+
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/smtp"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	
-	"github.com/arsmn/fiber-swagger/v2"
-	
-)
 
+	// "mailSender/database" // update import path
+	"mailSender/kafka"    // update import path
+
+	"github.com/arsmn/fiber-swagger/v2"
+)
 
 // @title Email Service API
 // @version 1.0
 // @description API for sending emails using Fiber
 // @host localhost:3000
+
 // @BasePath /
-func main() {
-	// Criação e inicialização do Service Locator
-	serviceLocator := NewEmailServiceLocator()
-	serviceLocator.Initialize(
-		"andremendes0113@gmail.com",
-		"0294BE2A8D274556D9584EE59D90DEFC0AB6",
-		"smtp.elasticemail.com",
-		2525,
-	)
 
-	// Configuração do aplicativo
-	app := setupApp(serviceLocator)
-
-	// Inicialização do aplicativo
-	app.Listen(":3000")
+type EmailAndCPF struct {
+	TrafficViolation TrafficViolation `json:"trafficViolation"`
+	CPF              string           `json:"cpf"`
 }
+
+// Método para converter TrafficViolation em Email
+func (tv TrafficViolation) ToEmail() Email {
+	return Email{
+		To:      "to@example.com",  // Substitua pelo destino desejado
+		Subject: "Traffic Violation",
+		Body: fmt.Sprintf(
+			"Traffic Violation Details:\n\n"+
+				"Car Plate: %s\n"+
+				"Address: %s\n"+
+				// Adicione outros campos conforme necessário
+				"Speed: %.2f\n"+
+				"Max Speed: %d\n"+
+				"Fine Price: %.2f\n"+
+				// Adicione outros campos conforme necessário
+				"Vehicle Owner Name: %s\n"+
+				"Vehicle Owner CPF: %s\n",
+			tv.CarPlate, tv.Address, tv.Speed, tv.MaxSpeed, tv.FinePrice, tv.VehicleOwnerName, tv.VehicleOwnerCPF),
+	}
+}
+
+// func main() {
+// 	// Criação e inicialização do Service Locator
+// 	serviceLocator := NewEmailServiceLocator()
+// 	serviceLocator.Initialize(
+// 		"andremendes0113@gmail.com",
+// 		"0294BE2A8D274556D9584EE59D90DEFC0AB6",
+// 		"smtp.elasticemail.com",
+// 		2525,
+// 	)
+
+// 	// Inicialização do consumidor Kafka em segundo plano
+// 	kafkaConfig := kafka.NewKafkaConfiguration()
+// 	kafkaClient, err := kafka.NewKafkaClient(kafkaConfig)
+// 	if err != nil {
+// 		fmt.Printf("Error initializing Kafka client: %v\n", err)
+// 		return
+// 	}
+// 	defer kafkaClient.Close()
+// 	go kafkaClient.ConsumeMessages("infraction-topic")
+// // Loop de leitura de mensagens do Kafka
+// for {
+// 	msg, err := kafkaClient.Consumer.ReadMessage(-1)
+// 	if err == nil {
+// 		var emailAndCPF EmailAndCPF
+// 		if err := json.Unmarshal(msg.Value, &emailAndCPF); err != nil {
+// 			log.Printf("Error decoding Kafka message: %v", err)
+// 			continue
+// 		}
+
+// 		// Verifique se o CPF existe no banco de dados antes de enviar o e-mail
+// 		exists, err := database.CheckCPFsExistInDB(emailAndCPF.CPF)
+// 		if err != nil {
+// 			log.Printf("Error checking CPF existence: %v", err)
+// 			continue
+// 		}
+
+// 		if !exists {
+// 			log.Printf("CPF %s does not exist in the database.", emailAndCPF.CPF)
+// 			continue
+// 		}
+
+// 		// Converta TrafficViolation em Email e envie o e-mail
+// 		email := emailAndCPF.TrafficViolation.ToEmail()
+// 		err = serviceLocator.GetService().SendEmail(email)
+// 		if err != nil {
+// 			log.Printf("Error sending email to %s: %v", email.To, err)
+// 			continue
+// 		}
+
+// 		log.Printf("Email sent successfully to %s", email.To)
+// 	} else {
+// 		log.Printf("Error reading Kafka message: %v", err)
+// 	}
+// }
+// }
+
+
+func main(){
+	
+	kafkaConsumer()
+	
+	
+
+}
+
+
+
+func kafkaConsumer() {
+
+	kafkaConfig := kafka.NewKafkaConfiguration()
+		kafkaClient, err := kafka.NewKafkaClient(kafkaConfig)
+		if err != nil {
+			fmt.Printf("Error initializing Kafka client: %v\n", err)
+			return
+		}
+		defer kafkaClient.Close()
+		go kafkaClient.ConsumeMessages("infraction-topic")
+	// Loop de leitura de mensagens do Kafka
+	for {
+		msg, err := kafkaClient.Consumer.ReadMessage(-1)
+		if err == nil {
+			log.Printf("Mensagem recebida: %s", msg.Value)
+			var emailAndCPF EmailAndCPF
+			if err := json.Unmarshal(msg.Value, &emailAndCPF); err != nil {
+				log.Printf("Error decoding Kafka message: %v", err)
+				continue
+			}
+
+	}
+	}
+	
+
+}
+
 
 // @Summary Send an email
 // @Description Send an email using the provided details.
@@ -166,4 +278,22 @@ func (s *EmailService) SendEmail(email Email) error {
 		return err
 	}
 	return nil
+}
+
+
+type TrafficViolation struct {
+	CarPlate          string  `json:"carPlate"`
+	Address           string  `json:"address"`
+	Date              string  `json:"date"`
+	Violation         string  `json:"violation"`
+	CarType           string  `json:"carType"`
+	CarColor          string  `json:"carColor"`
+	CarBrand          string  `json:"carBrand"`
+	VehicleOwnerName  string  `json:"vehicleOwnerName"`
+	VehicleOwnerCPF   string  `json:"vehicleOwnerCPF"`
+	Speed             float64 `json:"speed"`
+	MaxSpeed          int     `json:"maxSpeed"`
+	FinePrice         float64 `json:"finePrice"`
+	Sex               string  `json:"sex"`
+	Age               string  `json:"age"`
 }
