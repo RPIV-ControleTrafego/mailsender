@@ -4,7 +4,7 @@
 package main
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"log"
 	"net/smtp"
@@ -107,41 +107,35 @@ func (tv TrafficViolation) ToEmail() Email {
 // }
 
 
-func main(){
-	
-	kafkaConsumer()
-	
-	
+func main() {
+	// Crie uma configuração Kafka
+	kafkaConfig := kafka.NewKafkaConfiguration()
 
+	// Crie um cliente Kafka
+	kafkaClient, err := kafka.NewKafkaClient(kafkaConfig)
+	if err != nil {
+		log.Fatalf("Error initializing Kafka client: %v", err)
+		return
+	}
+	defer kafkaClient.Close()
+
+	// Chame a função ConsumeMessages para consumir mensagens do Kafka
+	go kafkaClient.ConsumeMessages("infraction-topic")
+
+	
+	// Faça o que mais for necessário na sua aplicação...
+
+	// Agora, o programa permanecerá em execução para consumir mensagens Kafka
+	select {}
 }
 
 
 
-func kafkaConsumer() {
 
-	kafkaConfig := kafka.NewKafkaConfiguration()
-		kafkaClient, err := kafka.NewKafkaClient(kafkaConfig)
-		if err != nil {
-			fmt.Printf("Error initializing Kafka client: %v\n", err)
-			return
-		}
-		defer kafkaClient.Close()
-		go kafkaClient.ConsumeMessages("infraction-topic")
-	// Loop de leitura de mensagens do Kafka
-	for {
-		msg, err := kafkaClient.Consumer.ReadMessage(-1)
-		if err == nil {
-			log.Printf("Mensagem recebida: %s", msg.Value)
-			var emailAndCPF EmailAndCPF
-			if err := json.Unmarshal(msg.Value, &emailAndCPF); err != nil {
-				log.Printf("Error decoding Kafka message: %v", err)
-				continue
-			}
-
-	}
-	}
-	
-
+func processMessage(msg string) {
+    // Adicione aqui o código para processar a mensagem recebida
+    log.Printf("Processing message: %s", msg)
+    // ... outras operações ...
 }
 
 
@@ -295,5 +289,5 @@ type TrafficViolation struct {
 	MaxSpeed          int     `json:"maxSpeed"`
 	FinePrice         float64 `json:"finePrice"`
 	Sex               string  `json:"sex"`
-	Age               string  `json:"age"`
+	Age               int  `json:"age"`
 }

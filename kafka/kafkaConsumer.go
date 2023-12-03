@@ -1,7 +1,10 @@
 package kafka
 
 import (
+	"encoding/json"
 	"fmt"
+	"mailSender/service"
+
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
@@ -69,6 +72,23 @@ func (kc *KafkaClient) SendMessage(topic string, message string) error {
 	return nil
 }
 
+type MessageContent struct {
+	CarPlate          string  `json:"carPlate"`
+	Address           string  `json:"address"`
+	Date              string  `json:"date"`
+	Violation         string  `json:"violation"`
+	CarType           string  `json:"carType"`
+	CarColor          string  `json:"carColor"`
+	CarBrand          string  `json:"carBrand"`
+	VehicleOwnerName  string  `json:"vehicleOwnerName"`
+	VehicleOwnerCPF   string  `json:"veiculeOwneCPF"`
+	Speed             float64 `json:"speed"`
+	MaxSpeed          int     `json:"maxSpeed"`
+	FinePrice         float64 `json:"finePrice"`
+	Sex               string  `json:"sex"`
+	Age               int  `json:"age"`
+}
+
 func (kc *KafkaClient) ConsumeMessages(topic string) {
     kc.Consumer.SubscribeTopics([]string{topic}, nil)
 
@@ -77,12 +97,27 @@ func (kc *KafkaClient) ConsumeMessages(topic string) {
     for {
         msg, err := kc.Consumer.ReadMessage(-1)
         if err == nil {
-            fmt.Printf("Received message: %s\n", string(msg.Value))
+            // Decodifica o valor da mensagem
+            var messageContent MessageContent
+            err := json.Unmarshal(msg.Value, &messageContent)
+            if err != nil {
+                fmt.Printf("Error decoding message value: %v\n", err)
+                continue
+            }
+
+	// Convert messageContent to service.MessageContent
+	serviceMessageContent := service.MessageContent(messageContent)
+
+	// Agora você pode acessar os campos da mensagem, como o CPF
+	service.ShowInfraction(serviceMessageContent)
+           
+
         } else {
             fmt.Printf("Error receiving message: %v\n", err)
         }
     }
 }
+
 
 func NewKafkaConfiguration() KafkaConfiguration {
 	return KafkaConfiguration{
