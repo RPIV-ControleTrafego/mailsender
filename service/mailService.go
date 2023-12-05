@@ -64,7 +64,7 @@ func ShowInfraction(message MessageContent, observers ...Observer) {
 
 func ValidateCPF(message MessageContent) bool {
 
-	email,err := database.GetEmailByCPF(message.VehicleOwnerCPF)
+	email,err := database.NewMongoDBProxy().GetEmailByCPF(message.VehicleOwnerCPF)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -84,7 +84,7 @@ func ValidateCPF(message MessageContent) bool {
 
 
 func GetEmail(message MessageContent) string {
-	email,err := database.GetEmailByCPF(message.VehicleOwnerCPF)
+	email,err := database.NewMongoDBProxy().GetEmailByCPF(message.VehicleOwnerCPF)
 	if err != nil {
 		fmt.Println(err)
 		return ""

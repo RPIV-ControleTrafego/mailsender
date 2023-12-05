@@ -26,80 +26,59 @@ type User struct {
 	Class    string `bson:"_class"`
 }
 
-// CheckCPFsExistInDB verifica se o CPF existe na coleção de usuários
-// CheckCPFsExistInDB verifica se o CPF existe na coleção de usuários
-func CheckCPFsExistInDB(veiculeOwneCPF string) (bool, error) {
-	client, err := getClient()
-	if err != nil {
-		return false, err
-	}
-	defer client.Disconnect(context.TODO())
-
-	// Selecione a coleção de usuários
-	collection := client.Database("users").Collection("user")
-
-	// Crie um filtro para procurar pelo CPF
-	filter := bson.M{"cpf": veiculeOwneCPF}
-
-	// Execute a consulta
-	var user User
-	err = collection.FindOne(context.TODO(), filter).Decode(&user)
-
-	if err == mongo.ErrNoDocuments {
-		// CPF não encontrado
-		log.Printf("CPF %s does not exist in the collection.", veiculeOwneCPF)
-		return false, nil
-	} else if err != nil {
-		// Um erro ocorreu durante a consulta
-		log.Fatal(err)
-		return false, err
-	}
 
 
-	// O CPF existe na coleção de usuários
-	log.Printf("CPF %s exists in the collection.", veiculeOwneCPF)
-	return true, nil
+// DatabaseOperations interface defines the common operations for the database
+type DatabaseOperations interface {
+	CheckCPFsExistInDB(veiculeOwneCPF string) (bool, error)
+	GetEmailByCPF(veiculeOwnerCPF string) (string, error)
 }
 
-func getClient() (*mongo.Client, error) {
-	clientOptions := options.Client().ApplyURI(mongoURI)
-
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	// Ping the MongoDB server to check if the connection is established
-	err = client.Ping(context.TODO(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("Connected to MongoDB!")
-
-	return client, nil
-}
-
+// MongoDBProxy struct acts as a proxy for the real MongoDBClient
 type MongoDBProxy struct {
 	RealDB *MongoDBClient
 }
 
+// NewMongoDBProxy creates a new instance of MongoDBProxy
 func NewMongoDBProxy() *MongoDBProxy {
-	// Inicialize o MongoDBClient real
-	realDB := &MongoDBClient{}
-
-	// Retorne uma instância do proxy com o MongoDBClient real
-	return &MongoDBProxy{
-		RealDB: realDB,
-	}
+	// The real database client is not initialized here
+	return &MongoDBProxy{}
 }
 
+// CheckCPFsExistInDB implements the CheckCPFsExistInDB method of DatabaseOperations interface
+func (p *MongoDBProxy) CheckCPFsExistInDB(veiculeOwneCPF string) (bool, error) {
+	// Lazy initialize the real database client if not done yet
+	if p.RealDB == nil {
+		p.RealDB = &MongoDBClient{}
+		if err := p.RealDB.Connect(); err != nil {
+			return false, err
+		}
+	}
 
+	// Delegate the operation to the real database client
+	return p.RealDB.CheckCPFsExistInDB(veiculeOwneCPF)
+}
+
+// GetEmailByCPF implements the GetEmailByCPF method of DatabaseOperations interface
+func (p *MongoDBProxy) GetEmailByCPF(veiculeOwnerCPF string) (string, error) {
+	// Lazy initialize the real database client if not done yet
+	if p.RealDB == nil {
+		p.RealDB = &MongoDBClient{}
+		if err := p.RealDB.Connect(); err != nil {
+			return "", err
+		}
+	}
+
+	// Delegate the operation to the real database client
+	return p.RealDB.GetEmailByCPF(veiculeOwnerCPF)
+}
+
+// MongoDBClient struct implements the DatabaseOperations interface
 type MongoDBClient struct {
-	
 	client *mongo.Client
 }
 
+// Connect method initializes the MongoDB client
 func (c *MongoDBClient) Connect() error {
 	clientOptions := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -120,39 +99,38 @@ func (c *MongoDBClient) Connect() error {
 	return nil
 }
 
-func (c *MongoDBClient) Close() {
-	err := c.client.Disconnect(context.TODO())
-	if err != nil {
+// CheckCPFsExistInDB implements the CheckCPFsExistInDB method of DatabaseOperations interface
+func (c *MongoDBClient) CheckCPFsExistInDB(veiculeOwneCPF string) (bool, error) {
+	collection := c.client.Database("users").Collection("user")
+	filter := bson.M{"cpf": veiculeOwneCPF}
+	var user User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+
+	if err == mongo.ErrNoDocuments {
+		log.Printf("CPF %s does not exist in the collection.", veiculeOwneCPF)
+		return false, nil
+	} else if err != nil {
 		log.Fatal(err)
+		return false, err
 	}
+
+	log.Printf("CPF %s exists in the collection.", veiculeOwneCPF)
+	return true, nil
 }
 
-// GetEmailByCPF obtém o e-mail associado a um CPF na coleção de usuários// GetEmailByCPF retorna o e-mail associado ao CPF do usuário
-func GetEmailByCPF(veiculeOwnerCPF string) (string, error) {
-    client, err := getClient()
-    if err != nil {
-        return "", err
-    }
-    defer client.Disconnect(context.TODO())
+// GetEmailByCPF implements the GetEmailByCPF method of DatabaseOperations interface
+func (c *MongoDBClient) GetEmailByCPF(veiculeOwnerCPF string) (string, error) {
+	collection := c.client.Database("users").Collection("user")
+	filter := bson.M{"cpf": veiculeOwnerCPF}
+	var user User
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
 
-    // Selecione a coleção de usuários
-    collection := client.Database("users").Collection("user")
+	if err == mongo.ErrNoDocuments {
+		return "", fmt.Errorf("CPF %s not found in the database", veiculeOwnerCPF)
+	} else if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
 
-    // Crie um filtro para procurar pelo CPF
-    filter := bson.M{"cpf": veiculeOwnerCPF}
-
-    // Execute a consulta
-    var user User
-    err = collection.FindOne(context.TODO(), filter).Decode(&user)
-
-    if err == mongo.ErrNoDocuments {
-        return "", fmt.Errorf("CPF %s not found in the database", veiculeOwnerCPF)
-    } else if err != nil {
-        // Um erro ocorreu durante a consulta
-        log.Fatal(err)
-        return "", err
-    }
-
-    // O CPF existe na coleção de usuários, retorne o e-mail
-    return user.Email, nil
+	return user.Email, nil
 }
