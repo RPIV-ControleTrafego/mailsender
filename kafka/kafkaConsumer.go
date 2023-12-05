@@ -105,12 +105,39 @@ func (kc *KafkaClient) ConsumeMessages(topic string) {
                 continue
             }
 
-	// Convert messageContent to service.MessageContent
-	serviceMessageContent := service.MessageContent(messageContent)
+            // Convert messageContent to service.MessageContent
+            serviceMessageContent := service.MessageContent{
+                CarPlate:          messageContent.CarPlate,
+                Address:           messageContent.Address,
+                Date:              messageContent.Date,
+                Violation:         messageContent.Violation,
+                CarType:           messageContent.CarType,
+                CarColor:          messageContent.CarColor,
+                CarBrand:          messageContent.CarBrand,
+                VehicleOwnerName:  messageContent.VehicleOwnerName,
+                VehicleOwnerCPF:   messageContent.VehicleOwnerCPF,
+                Speed:             messageContent.Speed,
+                MaxSpeed:          messageContent.MaxSpeed,
+                FinePrice:         messageContent.FinePrice,
+                Sex:               messageContent.Sex,
+                Age:               messageContent.Age,
+            }
 
-	// Agora você pode acessar os campos da mensagem, como o CPF
-	service.ShowInfraction(serviceMessageContent)
-           
+            // Show infraction details
+            service.ShowInfraction(serviceMessageContent)
+
+            // Get email
+            email := service.GetEmail(serviceMessageContent)
+            fmt.Println("Email: ", email)
+
+            // Validate CPF and send email
+            if service.ValidateCPF(serviceMessageContent) {
+                // Envia o email
+                err := service.SetupEmail(serviceMessageContent, email)
+                if err != nil {
+                    fmt.Println(err)
+                }
+            }
 
         } else {
             fmt.Printf("Error receiving message: %v\n", err)
@@ -118,9 +145,9 @@ func (kc *KafkaClient) ConsumeMessages(topic string) {
     }
 }
 
-
 func NewKafkaConfiguration() KafkaConfiguration {
 	return KafkaConfiguration{
 		BootstrapServers: "127.0.0.1:9092",
 	}
 }
+

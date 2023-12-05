@@ -80,6 +80,52 @@ func getClient() (*mongo.Client, error) {
 	return client, nil
 }
 
+type MongoDBProxy struct {
+	RealDB *MongoDBClient
+}
+
+func NewMongoDBProxy() *MongoDBProxy {
+	// Inicialize o MongoDBClient real
+	realDB := &MongoDBClient{}
+
+	// Retorne uma instância do proxy com o MongoDBClient real
+	return &MongoDBProxy{
+		RealDB: realDB,
+	}
+}
+
+
+type MongoDBClient struct {
+	
+	client *mongo.Client
+}
+
+func (c *MongoDBClient) Connect() error {
+	clientOptions := options.Client().ApplyURI(mongoURI)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	err = client.Ping(context.TODO(), nil)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	c.client = client
+	fmt.Println("Connected to MongoDB!")
+
+	return nil
+}
+
+func (c *MongoDBClient) Close() {
+	err := c.client.Disconnect(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 // GetEmailByCPF obtém o e-mail associado a um CPF na coleção de usuários// GetEmailByCPF retorna o e-mail associado ao CPF do usuário
 func GetEmailByCPF(veiculeOwnerCPF string) (string, error) {
