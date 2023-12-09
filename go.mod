@@ -4,11 +4,13 @@ go 1.21.0
 
 require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
-	github.com/stretchr/testify v1.7.1
+	github.com/icrowley/fake v0.0.0-20221112152111-d7b7e2276db2
+	github.com/stretchr/testify v1.7.5
 	go.mongodb.org/mongo-driver v1.13.0
 )
 
 require (
+	github.com/corpix/uarand v0.0.0-20170723150923-031be390f409 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
@@ -21,5 +23,5 @@ require (
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
