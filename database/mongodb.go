@@ -14,8 +14,6 @@ var (
 	mongoURI = "mongodb://localhost:27017/users"
 )
 
-
-
 // User representa a estrutura do documento na coleção de usuários
 type User struct {
 	Username string `bson:"username"`
@@ -25,8 +23,6 @@ type User struct {
 	CPF      string `bson:"cpf"`
 	Class    string `bson:"_class"`
 }
-
-
 
 // DatabaseOperations interface defines the common operations for the database
 type DatabaseOperations interface {

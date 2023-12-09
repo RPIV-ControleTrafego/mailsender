@@ -2,15 +2,15 @@ package service
 
 import (
 	"fmt"
-	"net/smtp"
+	"log"
 	"mailSender/database"
+	"net/smtp"
 )
 
 // Observer interface
 type Observer interface {
 	Update(message MessageContent)
 }
-
 
 // EmailService struct
 type EmailService struct {
@@ -31,29 +31,29 @@ func (es *EmailService) NotifyObservers(message MessageContent) {
 
 // MessageContent struct
 type MessageContent struct {
-	CarPlate          string  `json:"carPlate"`
-	Address           string  `json:"address"`
-	Date              string  `json:"date"`
-	Violation         string  `json:"violation"`
-	CarType           string  `json:"carType"`
-	CarColor          string  `json:"carColor"`
-	CarBrand          string  `json:"carBrand"`
-	VehicleOwnerName  string  `json:"vehicleOwnerName"`
-	VehicleOwnerCPF   string  `json:"veiculeOwneCPF"`
-	Speed             float64 `json:"speed"`
-	MaxSpeed          int     `json:"maxSpeed"`
-	FinePrice         float64 `json:"finePrice"`
-	Sex               string  `json:"sex"`
-	Age               int     `json:"age"`
+	CarPlate         string  `json:"carPlate"`
+	Address          string  `json:"address"`
+	Date             string  `json:"date"`
+	Violation        string  `json:"violation"`
+	CarType          string  `json:"carType"`
+	CarColor         string  `json:"carColor"`
+	CarBrand         string  `json:"carBrand"`
+	VehicleOwnerName string  `json:"vehicleOwnerName"`
+	VehicleOwnerCPF  string  `json:"veiculeOwneCPF"`
+	Speed            float64 `json:"speed"`
+	MaxSpeed         int     `json:"maxSpeed"`
+	FinePrice        float64 `json:"finePrice"`
+	Sex              string  `json:"sex"`
+	Age              int     `json:"age"`
 }
 
-// ShowInfraction function
+// ShowInfraction displays the details of an infraction and notifies a list of observers.
 func ShowInfraction(message MessageContent, observers ...Observer) {
-	fmt.Println("Infraction details:")
-	fmt.Printf("   Car Plate: %s\n", message.CarPlate)
-	fmt.Printf("   Violation: %s\n", message.Violation)
-	fmt.Printf("   Owner Name: %s\n", message.VehicleOwnerName)
-	fmt.Printf("   Owner CPF: %s\n", message.VehicleOwnerCPF)
+	log.Println("Infraction details:")
+	log.Printf("   Car Plate: %s\n", message.CarPlate)
+	log.Printf("   Violation: %s\n", message.Violation)
+	log.Printf("   Owner Name: %s\n", message.VehicleOwnerName)
+	log.Printf("   Owner CPF: %s\n", message.VehicleOwnerCPF)
 
 	// Notify observers
 	for _, observer := range observers {
@@ -61,10 +61,10 @@ func ShowInfraction(message MessageContent, observers ...Observer) {
 	}
 }
 
+var proxy = database.NewMongoDBProxy()
 
 func ValidateCPF(message MessageContent) bool {
-
-	email,err := database.NewMongoDBProxy().GetEmailByCPF(message.VehicleOwnerCPF)
+	email, err := proxy.GetEmailByCPF(message.VehicleOwnerCPF)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -76,49 +76,41 @@ func ValidateCPF(message MessageContent) bool {
 	}
 
 	fmt.Println("Email: ", email)
-	
+
 	return true
-	
-	
 }
 
-
 func GetEmail(message MessageContent) string {
-	email,err := database.NewMongoDBProxy().GetEmailByCPF(message.VehicleOwnerCPF)
+	email, err := proxy.GetEmailByCPF(message.VehicleOwnerCPF)
 	if err != nil {
 		fmt.Println(err)
 		return ""
 	}
-	 if(email == "andremendes0113@gmail.com"){
-		return "robertaaspigolon@gmail.com"
-	 }
+	if email == "andremendes0113@gmail.com" {
+		return "andremiranda.aluno@unipampa.edu.br"
+	}
 
 	return email
 }
 
+func SendMail(from, password, host string, port int, to []string, message []byte) error {
+	auth := smtp.PlainAuth("", from, password, host)
 
-
-	func SendMail(from, password, host string, port int, to []string, message []byte) error {
-		auth := smtp.PlainAuth("", from, password, host)
-
-		err := smtp.SendMail(fmt.Sprintf("%s:%d", host, port), auth, from, to, message)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	err := smtp.SendMail(fmt.Sprintf("%s:%d", host, port), auth, from, to, message)
+	if err != nil {
+		return err
 	}
 
-	
+	return nil
+}
 
-	func SetupEmail(message MessageContent, to string,  observers ...Observer ) error {
-		from := "andremendes0113@gmail.com"
-		password := "0294BE2A8D274556D9584EE59D90DEFC0AB6" // Sua senha do Elastic Email
-		
-		subject := "Infraction"
-		
+func SetupEmail(message MessageContent, to string, observers ...Observer) error {
+	from := "andremendes0113@gmail.com"
+	password := "0294BE2A8D274556D9584EE59D90DEFC0AB6" // Sua senha do Elastic Email
 
-		msg := "From: " + from + "\n" +
+	subject := "Infraction"
+
+	msg := "From: " + from + "\n" +
 		"To: " + to + "\n" +
 		"Subject: " + subject + "\n\n" +
 		"Placa: " + message.CarPlate + "\n" +
@@ -126,7 +118,7 @@ func GetEmail(message MessageContent) string {
 		"Violação: " + message.Violation + "\n" +
 		"Nome: " + message.VehicleOwnerName + "\n" +
 		"CPF: " + message.VehicleOwnerCPF + "\n" +
-		"**Valor da Multa:** " + fmt.Sprintf("%.2f", message.FinePrice) + "\n" +  // Include only once
+		"**Valor da Multa:** " + fmt.Sprintf("%.2f", message.FinePrice) + "\n" + // Include only once
 		"Endereço: " + message.Address + "\n" +
 		"Data: " + message.Date + "\n" +
 		"Tipo de Carro: " + message.CarType + "\n" +
@@ -135,25 +127,22 @@ func GetEmail(message MessageContent) string {
 		"Velocidade: " + fmt.Sprintf("%.2f", message.Speed) + "\n" +
 		"Velocidade Máxima Permitida: " + fmt.Sprintf("%d", message.MaxSpeed) + "\n" +
 		"\n"
-		err := SendMail(from, password, "smtp.elasticemail.com", 2525, []string{to}, []byte(msg))
-		if err != nil {
-			fmt.Println("Erro ao enviar o email:", err)
-		} else {
-			fmt.Println("Email enviado com sucesso para:", to)
-		}
+	err := SendMail(from, password, "smtp.elasticemail.com", 2525, []string{to}, []byte(msg))
+	if err != nil {
+		fmt.Println("Erro ao enviar o email:", err)
+	} else {
+		fmt.Println("Email enviado com sucesso para:", to)
+	}
 
-
-		// Notify observers
+	// Notify observers
 	for _, observer := range observers {
 		observer.Update(message)
 	}
 
-		return nil
-	}
+	return nil
+}
 
-
-
-	// EmailObserver struct
+// EmailObserver struct
 type EmailObserver struct{}
 
 // Update method for EmailObserver
@@ -163,6 +152,4 @@ func (eo *EmailObserver) Update(message MessageContent) {
 	fmt.Printf("   Violation: %s\n", message.Violation)
 	fmt.Printf("   Owner Name: %s\n", message.VehicleOwnerName)
 	fmt.Printf("   Owner CPF: %s\n", message.VehicleOwnerCPF)
-
 }
-

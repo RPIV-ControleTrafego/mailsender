@@ -31,7 +31,7 @@ func NewKafkaClient(config KafkaConfiguration) (*KafkaClient, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": config.BootstrapServers,
 		"group.id":          "infraction-topic", // Specify your consumer group ID
-		"auto.offset.reset": "earliest",      // Adjust as needed based on your requirements
+		"auto.offset.reset": "earliest",         // Adjust as needed based on your requirements
 	})
 
 	if err != nil {
@@ -73,76 +73,76 @@ func (kc *KafkaClient) SendMessage(topic string, message string) error {
 }
 
 type MessageContent struct {
-	CarPlate          string  `json:"carPlate"`
-	Address           string  `json:"address"`
-	Date              string  `json:"date"`
-	Violation         string  `json:"violation"`
-	CarType           string  `json:"carType"`
-	CarColor          string  `json:"carColor"`
-	CarBrand          string  `json:"carBrand"`
-	VehicleOwnerName  string  `json:"vehicleOwnerName"`
-	VehicleOwnerCPF   string  `json:"veiculeOwneCPF"`
-	Speed             float64 `json:"speed"`
-	MaxSpeed          int     `json:"maxSpeed"`
-	FinePrice         float64 `json:"finePrice"`
-	Sex               string  `json:"sex"`
-	Age               int  `json:"age"`
+	CarPlate         string  `json:"carPlate"`
+	Address          string  `json:"address"`
+	Date             string  `json:"date"`
+	Violation        string  `json:"violation"`
+	CarType          string  `json:"carType"`
+	CarColor         string  `json:"carColor"`
+	CarBrand         string  `json:"carBrand"`
+	VehicleOwnerName string  `json:"vehicleOwnerName"`
+	VehicleOwnerCPF  string  `json:"veiculeOwneCPF"`
+	Speed            float64 `json:"speed"`
+	MaxSpeed         int     `json:"maxSpeed"`
+	FinePrice        float64 `json:"finePrice"`
+	Sex              string  `json:"sex"`
+	Age              int     `json:"age"`
 }
 
 func (kc *KafkaClient) ConsumeMessages(topic string) {
-    kc.Consumer.SubscribeTopics([]string{topic}, nil)
+	kc.Consumer.SubscribeTopics([]string{topic}, nil)
 
-    fmt.Printf("Consumer subscribed to topic: %s\n", topic)
+	fmt.Printf("Consumer subscribed to topic: %s\n", topic)
 
-    for {
-        msg, err := kc.Consumer.ReadMessage(-1)
-        if err == nil {
-            // Decodifica o valor da mensagem
-            var messageContent MessageContent
-            err := json.Unmarshal(msg.Value, &messageContent)
-            if err != nil {
-                fmt.Printf("Error decoding message value: %v\n", err)
-                continue
-            }
+	for {
+		msg, err := kc.Consumer.ReadMessage(-1)
+		if err == nil {
+			// Decodifica o valor da mensagem
+			var messageContent MessageContent
+			err := json.Unmarshal(msg.Value, &messageContent)
+			if err != nil {
+				fmt.Printf("Error decoding message value: %v\n", err)
+				continue
+			}
 
-            // Convert messageContent to service.MessageContent
-            serviceMessageContent := service.MessageContent{
-                CarPlate:          messageContent.CarPlate,
-                Address:           messageContent.Address,
-                Date:              messageContent.Date,
-                Violation:         messageContent.Violation,
-                CarType:           messageContent.CarType,
-                CarColor:          messageContent.CarColor,
-                CarBrand:          messageContent.CarBrand,
-                VehicleOwnerName:  messageContent.VehicleOwnerName,
-                VehicleOwnerCPF:   messageContent.VehicleOwnerCPF,
-                Speed:             messageContent.Speed,
-                MaxSpeed:          messageContent.MaxSpeed,
-                FinePrice:         messageContent.FinePrice,
-                Sex:               messageContent.Sex,
-                Age:               messageContent.Age,
-            }
+			// Convert messageContent to service.MessageContent
+			serviceMessageContent := service.MessageContent{
+				CarPlate:         messageContent.CarPlate,
+				Address:          messageContent.Address,
+				Date:             messageContent.Date,
+				Violation:        messageContent.Violation,
+				CarType:          messageContent.CarType,
+				CarColor:         messageContent.CarColor,
+				CarBrand:         messageContent.CarBrand,
+				VehicleOwnerName: messageContent.VehicleOwnerName,
+				VehicleOwnerCPF:  messageContent.VehicleOwnerCPF,
+				Speed:            messageContent.Speed,
+				MaxSpeed:         messageContent.MaxSpeed,
+				FinePrice:        messageContent.FinePrice,
+				Sex:              messageContent.Sex,
+				Age:              messageContent.Age,
+			}
 
-            // Show infraction details
-            service.ShowInfraction(serviceMessageContent)
+			// Show infraction details
+			service.ShowInfraction(serviceMessageContent)
 
-            // Get email
-            email := service.GetEmail(serviceMessageContent)
-            fmt.Println("Email: ", email)
+			// Get email
+			email := service.GetEmail(serviceMessageContent)
+			fmt.Println("Email: ", email)
 
-            // Validate CPF and send email
-            if service.ValidateCPF(serviceMessageContent) {
-                // Envia o email
-                err := service.SetupEmail(serviceMessageContent, email)
-                if err != nil {
-                    fmt.Println(err)
-                }
-            }
+			// Validate CPF and send email
+			if service.ValidateCPF(serviceMessageContent) {
+				// Envia o email
+				err := service.SetupEmail(serviceMessageContent, email)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
 
-        } else {
-            fmt.Printf("Error receiving message: %v\n", err)
-        }
-    }
+		} else {
+			fmt.Printf("Error receiving message: %v\n", err)
+		}
+	}
 }
 
 func NewKafkaConfiguration() KafkaConfiguration {
@@ -150,4 +150,3 @@ func NewKafkaConfiguration() KafkaConfiguration {
 		BootstrapServers: "127.0.0.1:9092",
 	}
 }
-

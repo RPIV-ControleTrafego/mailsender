@@ -4,15 +4,10 @@
 package main
 
 import (
-
 	"log"
-	
-	"mailSender/kafka"    
 
-	
+	"mailSender/kafka"
 )
-
-
 
 func main() {
 	// Crie uma configuração Kafka
@@ -29,12 +24,8 @@ func main() {
 	// Chame a função ConsumeMessages para consumir mensagens do Kafka
 	go kafkaClient.ConsumeMessages("infraction-topic")
 
-	
 	// Faça o que mais for necessário na sua aplicação...
 
 	// Agora, o programa permanecerá em execução para consumir mensagens Kafka
 	select {}
 }
-
-
-
