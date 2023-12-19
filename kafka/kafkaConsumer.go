@@ -30,8 +30,9 @@ func NewKafkaClient(config KafkaConfiguration) (*KafkaClient, error) {
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": config.BootstrapServers,
-		"group.id":          "infraction-topic", // Specify your consumer group ID
-		"auto.offset.reset": "earliest",         // Adjust as needed based on your requirements
+		"group.id":          "infraction-topic-mail", 
+		"auto.offset.reset": "earliest",        
+		
 	})
 
 	if err != nil {

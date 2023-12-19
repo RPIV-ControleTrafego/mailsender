@@ -54,6 +54,8 @@ func ShowInfraction(message MessageContent, observers ...Observer) {
 	log.Printf("   Violation: %s\n", message.Violation)
 	log.Printf("   Owner Name: %s\n", message.VehicleOwnerName)
 	log.Printf("   Owner CPF: %s\n", message.VehicleOwnerCPF)
+// //fine price
+// 	log.Printf("   Fine Price: %.2f\n", message.FinePrice)
 
 	// Notify observers
 	for _, observer := range observers {
